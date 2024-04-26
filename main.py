@@ -8,7 +8,7 @@ CORS(app)
 # List of ticker symbols for the portfolio
 portfolio_symbols = ['GAIL.NS', 'IDFCFIRSTB.NS', 'IOC.NS', 'IRFC.NS', 'JIOFIN.NS', 'NBCC.NS', 'NCC.NS', 'ONGC.NS', 'SAIL.NS', 'TATAPOWER.NS', 'TATASTEEL.NS', 'TNPETRO.NS', 'ZOMATO.NS']
 
-@app.route('/api/ltp/portfolio')
+@app.route('/api/ltp/portfolio', methods=['GET'])
 def get_portfolio_ltp():
     try:
         portfolio_ltp = {}
