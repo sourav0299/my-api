@@ -1,7 +1,9 @@
 from flask import Flask, jsonify
 import yfinance as yf
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # List of ticker symbols for the portfolio
 portfolio_symbols = ['GAIL.NS', 'IDFCFIRSTB.NS', 'IOC.NS', 'IRFC.NS', 'JIOFIN.NS', 'NBCC.NS', 'NCC.NS', 'ONGC.NS', 'SAIL.NS', 'TATAPOWER.NS', 'TATASTEEL.NS', 'TNPETRO.NS', 'ZOMATO.NS']
