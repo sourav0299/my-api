@@ -1,33 +1,56 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
+from flask_socketio import SocketIO
 import yfinance as yf
-from flask_cors import CORS
+import threading
+import time
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+socketio = SocketIO(app)
 
 # List of ticker symbols for the portfolio
 portfolio_symbols = ['GAIL.NS', 'IDFCFIRSTB.NS', 'IOC.NS', 'IRFC.NS', 'JIOFIN.NS', 'NBCC.NS', 'NCC.NS', 'ONGC.NS', 'SAIL.NS', 'TATAPOWER.NS', 'TATASTEEL.NS', 'TNPETRO.NS', 'ZOMATO.NS']
 
-@app.route('/api/ltp/portfolio', methods=['GET'])
-def get_portfolio_ltp():
-    try:
-        portfolio_ltp = {}
-        for symbol in portfolio_symbols:
-            # Fetch the data
-            data = yf.Ticker(symbol)
+def update_prices():
+    while True:
+        try:
+            portfolio_ltp = {}
+            for symbol in portfolio_symbols:
+                # Fetch the data
+                data = yf.Ticker(symbol)
 
-            # Get the last price
-            last_price = data.history(period="1d")["Close"].iloc[-1]
+                # Get the last price
+                last_price = data.history(period="1d")["Close"].iloc[-1]
 
-            # Round the last price to two decimal places
-            last_price = round(last_price, 2)
+                # Add the symbol and last price to the portfolio dictionary
+                portfolio_ltp[symbol] = last_price
 
-            # Add the symbol and last price to the portfolio dictionary
-            portfolio_ltp[symbol] = last_price
+            # Emit updated prices to connected clients
+            socketio.emit('portfolio_prices', portfolio_ltp)
 
-        return jsonify(portfolio_ltp), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+            # Sleep for a short interval before updating again
+            time.sleep(5)  # Update every 5 seconds, adjust as needed
+        except Exception as e:
+            print("Error:", e)
+            # If an error occurs, continue updating after a short delay
+            time.sleep(10)  # Wait for 10 seconds before retrying
+
+@app.route('/')
+def index():
+    return "Real-time Portfolio Prices API"
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    # Start the price update thread
+    update_thread = threading.Thread(target=update_prices)
+    update_thread.daemon = True
+    update_thread.start()
+
+    # Start the Flask-SocketIO server
+    socketio.run(app, host='0.0.0.0', port=8080)
